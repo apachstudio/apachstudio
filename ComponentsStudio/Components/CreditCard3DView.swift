@@ -232,7 +232,7 @@ struct CreditCard3DView: View {
         let particleCount = max(2, Int(specs.particleCount.rounded()))
         let particleDistance = CGFloat(specs.particleDistance)
 
-        Canvas { context, _ in
+        return Canvas { context, _ in
             for index in 0..<particleCount {
                 let progress = Double(index) / Double(particleCount - 1)
                 let trailPhase = wrapped(phase - progress * specs.particleTrail)

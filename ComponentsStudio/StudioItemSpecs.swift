@@ -70,57 +70,105 @@ struct CreditCard3DSpecs: Equatable {
 }
 
 struct AnimatedCreditCardSpecs: Equatable {
-    var strokePeriod: Double
-    var strokeWidth: Double
-    var auraBlurRadius: Double
+    /// Seconds for the snake stroke / aura gradient to sweep a full turn.
+    var auraPeriod: Double
+    var snakeWidth: Double
+    var auraBlur: Double
     var auraOpacity: Double
-    var particleCount: Double
-    var particleDuration: Double
-    var minimumSpeed: Double
-    var maximumSpeed: Double
-    var gravity: Double
-    var particleSpreadDegrees: Double
-    var maximumOpacity: Double
-
-    init(
-        strokePeriod: Double = 4.2,
-        strokeWidth: Double = 0.9,
-        auraBlurRadius: Double = 10,
-        auraOpacity: Double = 0.13,
-        particleCount: Double = 24,
-        particleDuration: Double = 2,
-        minimumSpeed: Double = 40,
-        maximumSpeed: Double = 80,
-        gravity: Double = 147.15,
-        particleSpreadDegrees: Double = 32.4,
-        maximumOpacity: Double = 0.48
-    ) {
-        self.strokePeriod = strokePeriod
-        self.strokeWidth = strokeWidth
-        self.auraBlurRadius = auraBlurRadius
-        self.auraOpacity = auraOpacity
-        self.particleCount = particleCount
-        self.particleDuration = particleDuration
-        self.minimumSpeed = minimumSpeed
-        self.maximumSpeed = maximumSpeed
-        self.gravity = gravity
-        self.particleSpreadDegrees = particleSpreadDegrees
-        self.maximumOpacity = maximumOpacity
-    }
+    var strokeLength: Double
+    var strokeEase: Double
+    var strokeSpring: Double
+    /// Simultaneous emitters. Each has a fixed hash-derived seed, so raising
+    /// the count adds particles without reshuffling the existing ones.
+    var particleCount: Int
+    /// Upper bound of the per-particle launch speed range.
+    var particleSpeed: Double
+    /// Half-angle of the launch cone, in radians.
+    var particleSpread: Double
+    /// Upper bound of the per-particle diameter range.
+    var particleSize: Double
+    var particleGravity: Double
+    var rotationEnabled: Bool
+    var maxTilt: Double
+    var perspective: Double
+    var cardDepth: Double
+    var texture: Double
+    var glossiness: Double
+    var strokeStartR: Double
+    var strokeStartG: Double
+    var strokeStartB: Double
+    var strokeMidR: Double
+    var strokeMidG: Double
+    var strokeMidB: Double
+    var strokeEndR: Double
+    var strokeEndG: Double
+    var strokeEndB: Double
+    var glowStartR: Double
+    var glowStartG: Double
+    var glowStartB: Double
+    var glowMidR: Double
+    var glowMidG: Double
+    var glowMidB: Double
+    var glowEndR: Double
+    var glowEndG: Double
+    var glowEndB: Double
+    var cardTopR: Double
+    var cardTopG: Double
+    var cardTopB: Double
+    var cardMidR: Double
+    var cardMidG: Double
+    var cardMidB: Double
+    var cardBottomR: Double
+    var cardBottomG: Double
+    var cardBottomB: Double
 
     @MainActor
     init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
-        strokePeriod = sheet.value("strokePeriod", in: state)
-        strokeWidth = sheet.value("strokeWidth", in: state)
-        auraBlurRadius = sheet.value("auraBlurRadius", in: state)
+        auraPeriod = sheet.value("auraPeriod", in: state)
+        snakeWidth = sheet.value("snakeWidth", in: state)
+        auraBlur = sheet.value("auraBlur", in: state)
         auraOpacity = sheet.value("auraOpacity", in: state)
-        particleCount = sheet.value("particleCount", in: state)
-        particleDuration = sheet.value("particleDuration", in: state)
-        minimumSpeed = sheet.value("minimumSpeed", in: state)
-        maximumSpeed = sheet.value("maximumSpeed", in: state)
-        gravity = sheet.value("gravity", in: state)
-        particleSpreadDegrees = sheet.value("particleSpreadDegrees", in: state)
-        maximumOpacity = sheet.value("maximumOpacity", in: state)
+        strokeLength = sheet.value("strokeLength", in: state)
+        strokeEase = sheet.value("strokeEase", in: state)
+        strokeSpring = sheet.value("strokeSpring", in: state)
+        particleCount = Int(sheet.value("particleCount", in: state).rounded())
+        particleSpeed = sheet.value("particleSpeed", in: state)
+        particleSpread = sheet.value("particleSpread", in: state) * .pi
+        particleSize = sheet.value("particleSize", in: state)
+        particleGravity = sheet.value("particleGravity", in: state)
+        rotationEnabled = sheet.value("rotationEnabled", in: state) >= 0.5
+        maxTilt = sheet.value("maxTilt", in: state)
+        perspective = sheet.value("perspective", in: state)
+        cardDepth = sheet.value("cardDepth", in: state)
+        texture = sheet.value("texture", in: state)
+        glossiness = sheet.value("glossiness", in: state)
+        strokeStartR = sheet.value("strokeStartR", in: state)
+        strokeStartG = sheet.value("strokeStartG", in: state)
+        strokeStartB = sheet.value("strokeStartB", in: state)
+        strokeMidR = sheet.value("strokeMidR", in: state)
+        strokeMidG = sheet.value("strokeMidG", in: state)
+        strokeMidB = sheet.value("strokeMidB", in: state)
+        strokeEndR = sheet.value("strokeEndR", in: state)
+        strokeEndG = sheet.value("strokeEndG", in: state)
+        strokeEndB = sheet.value("strokeEndB", in: state)
+        glowStartR = sheet.value("glowStartR", in: state)
+        glowStartG = sheet.value("glowStartG", in: state)
+        glowStartB = sheet.value("glowStartB", in: state)
+        glowMidR = sheet.value("glowMidR", in: state)
+        glowMidG = sheet.value("glowMidG", in: state)
+        glowMidB = sheet.value("glowMidB", in: state)
+        glowEndR = sheet.value("glowEndR", in: state)
+        glowEndG = sheet.value("glowEndG", in: state)
+        glowEndB = sheet.value("glowEndB", in: state)
+        cardTopR = sheet.value("cardTopR", in: state)
+        cardTopG = sheet.value("cardTopG", in: state)
+        cardTopB = sheet.value("cardTopB", in: state)
+        cardMidR = sheet.value("cardMidR", in: state)
+        cardMidG = sheet.value("cardMidG", in: state)
+        cardMidB = sheet.value("cardMidB", in: state)
+        cardBottomR = sheet.value("cardBottomR", in: state)
+        cardBottomG = sheet.value("cardBottomG", in: state)
+        cardBottomB = sheet.value("cardBottomB", in: state)
     }
 }
 
@@ -764,22 +812,30 @@ extension StudioItem {
 
         case .animatedCreditCard:
             let s = AnimatedCreditCardSpecs(state, sheet: sheet)
-            let minimumSpeed = min(s.minimumSpeed, s.maximumSpeed)
-            let maximumSpeed = max(s.minimumSpeed, s.maximumSpeed)
             return """
             // Generated by Component Studio · preset: \(presetLabel)
-            // Imported Animated Credit Card — AI snake + projectile particles
+            // Animated Credit Card — 3D tilt + rounded snake stroke + projectile particles
 
-            let strokePeriod: Double = \(fmt(s.strokePeriod))
-            let strokeWidth: CGFloat = \(fmt(s.strokeWidth))
-            let auraBlurRadius: CGFloat = \(fmt(s.auraBlurRadius))
+            let auraPeriod: Double = \(fmt(s.auraPeriod))     // full gradient turn
+            let snakeWidth: CGFloat = \(fmt(s.snakeWidth))
+            let strokeLength: Double = \(fmt(s.strokeLength))
+            let strokeEase: Double = \(fmt(s.strokeEase))
+            let strokeSpring: Double = \(fmt(s.strokeSpring))
+            let auraBlur: CGFloat = \(fmt(s.auraBlur))
             let auraOpacity: Double = \(fmt(s.auraOpacity))
-            let particleCount: Int = \(Int(s.particleCount.rounded()))
-            let particleDuration: Double = \(fmt(s.particleDuration))
-            let speedRange: ClosedRange<Double> = \(fmt(minimumSpeed))...\(fmt(maximumSpeed))
-            let gravity: Double = \(fmt(s.gravity))
-            let particleSpreadDegrees: Double = \(fmt(s.particleSpreadDegrees))
-            let maximumOpacity: Double = \(fmt(s.maximumOpacity))
+            let rotationEnabled: Bool = \(s.rotationEnabled ? "true" : "false")
+            let maxTilt: Double = \(fmt(s.maxTilt))
+            let perspective: Double = \(fmt(s.perspective))
+            let cardDepth: CGFloat = \(fmt(s.cardDepth))
+            let texture: Double = \(fmt(s.texture))
+            let glossiness: Double = \(fmt(s.glossiness))
+
+            // Particle field (emitted along the card's top edge):
+            let particleCount: Int = \(s.particleCount)
+            let maximumSpeed: Double = \(fmt(s.particleSpeed))
+            let spread: Double = \(fmt(s.particleSpread))     // radians, half-cone
+            let maximumDiameter: Double = \(fmt(s.particleSize))
+            let gravity: Double = \(fmt(s.particleGravity))
             """
 
         case .flameInGlass:
@@ -908,47 +964,87 @@ extension StudioItem {
     private static let animatedCreditCardSheet = ComponentSpecSheet(
         categories: [
             ComponentSpecCategory(
-                id: "snake",
-                label: "AI Snake",
+                id: "stroke",
+                label: "Stroke",
                 controls: [
-                    .init(id: "strokePeriod", label: "Cycle", kind: .slider(2.0...8.0, format: "%.1fs")),
-                    .init(id: "strokeWidth", label: "Stroke", kind: .slider(0.4...1.6, format: "%.1f")),
-                    .init(id: "auraBlurRadius", label: "Aura blur", kind: .slider(0.0...20.0, format: "%.0f")),
-                    .init(id: "auraOpacity", label: "Aura", kind: .slider(0.05...0.30, format: "%.2f")),
+                    .init(id: "auraPeriod", label: "Cycle", kind: .slider(1.0...8.0, format: "%.1fs")),
+                    .init(id: "snakeWidth", label: "Width", kind: .slider(0.4...5.0, format: "%.1f")),
+                    .init(id: "strokeLength", label: "Length", kind: .slider(0.08...0.62, format: "%.2f")),
+                    .init(id: "strokeEase", label: "Ease", kind: .slider(0.0...1.0, format: "%.2f")),
+                    .init(id: "strokeSpring", label: "Spring", kind: .slider(0.0...1.0, format: "%.2f")),
+                    .init(id: "strokeStart", label: "Start", kind: .color),
+                    .init(id: "strokeMid", label: "Mid", kind: .color),
+                    .init(id: "strokeEnd", label: "End", kind: .color),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "glow",
+                label: "Glow",
+                controls: [
+                    .init(id: "auraBlur", label: "Bloom", kind: .slider(0.0...36.0, format: "%.0f")),
+                    .init(id: "auraOpacity", label: "Opacity", kind: .slider(0.0...0.70, format: "%.2f")),
+                    .init(id: "glowStart", label: "Start", kind: .color),
+                    .init(id: "glowMid", label: "Mid", kind: .color),
+                    .init(id: "glowEnd", label: "End", kind: .color),
                 ]
             ),
             ComponentSpecCategory(
                 id: "particles",
                 label: "Particles",
                 controls: [
-                    .init(id: "particleCount", label: "Count", kind: .slider(8.0...48.0, format: "%.0f")),
-                    .init(id: "particleDuration", label: "Lifetime", kind: .slider(0.5...4.0, format: "%.1fs")),
-                    .init(id: "particleSpreadDegrees", label: "Spread", kind: .slider(5.0...70.0, format: "%.0f°")),
-                    .init(id: "maximumOpacity", label: "Opacity", kind: .slider(0.20...1.00, format: "%.2f")),
+                    .init(id: "particleCount", label: "Count", kind: .slider(0...80, format: "%.0f")),
+                    .init(id: "particleSpeed", label: "Speed", kind: .slider(40...220, format: "%.0f")),
+                    .init(id: "particleSpread", label: "Spread", kind: .slider(0.0...0.50, format: "%.2fπ")),
+                    .init(id: "particleSize", label: "Size", kind: .slider(0.8...6.0, format: "%.1f")),
+                    .init(id: "particleGravity", label: "Gravity", kind: .slider(0...400, format: "%.0f")),
                 ]
             ),
             ComponentSpecCategory(
-                id: "physics",
-                label: "Physics",
+                id: "card",
+                label: "Card",
                 controls: [
-                    .init(id: "minimumSpeed", label: "Min speed", kind: .slider(10.0...100.0, format: "%.0f")),
-                    .init(id: "maximumSpeed", label: "Max speed", kind: .slider(20.0...140.0, format: "%.0f")),
-                    .init(id: "gravity", label: "Gravity", kind: .slider(0.0...240.0, format: "%.0f")),
+                    .init(id: "cardTop", label: "Top", kind: .color),
+                    .init(id: "cardMid", label: "Mid", kind: .color),
+                    .init(id: "cardBottom", label: "Bottom", kind: .color),
+                    .init(id: "rotationEnabled", label: "Rotation", kind: .toggle),
+                    .init(id: "maxTilt", label: "Tilt", kind: .slider(0...24, format: "%.0f°")),
+                    .init(id: "perspective", label: "Persp", kind: .slider(0.20...1.00, format: "%.2f")),
+                    .init(id: "cardDepth", label: "Depth", kind: .slider(0...18, format: "%.0f")),
+                    .init(id: "texture", label: "Texture", kind: .slider(0.0...1.0, format: "%.2f")),
+                    .init(id: "glossiness", label: "Gloss", kind: .slider(0.0...1.0, format: "%.2f")),
                 ]
             ),
         ],
         defaults: [
-            "strokePeriod": 4.2,
-            "strokeWidth": 0.9,
-            "auraBlurRadius": 10.0,
+            "auraPeriod": 4.2,
+            "snakeWidth": 0.9,
+            "strokeLength": 0.24,
+            "strokeEase": 0.0,
+            "strokeSpring": 0.0,
+            "auraBlur": 10,
             "auraOpacity": 0.13,
-            "particleCount": 24.0,
-            "particleDuration": 2.0,
-            "minimumSpeed": 40.0,
-            "maximumSpeed": 80.0,
-            "gravity": 147.15,
-            "particleSpreadDegrees": 32.4,
-            "maximumOpacity": 0.48,
+            "particleCount": 24,
+            "particleSpeed": 80,
+            // 0.18π — the launch cone from the reference particle effect.
+            "particleSpread": 0.18,
+            "particleSize": 2.2,
+            // 15 × 9.81, the reference effect's gravity.
+            "particleGravity": 147.15,
+            "rotationEnabled": 1,
+            "maxTilt": 12,
+            "perspective": 0.55,
+            "cardDepth": 7,
+            "texture": 0.18,
+            "glossiness": 0.32,
+            "strokeStartR": 1.00, "strokeStartG": 1.00, "strokeStartB": 1.00,
+            "strokeMidR": 1.00, "strokeMidG": 0.45, "strokeMidB": 0.62,
+            "strokeEndR": 0.74, "strokeEndG": 0.38, "strokeEndB": 1.00,
+            "glowStartR": 0.40, "glowStartG": 0.30, "glowStartB": 1.00,
+            "glowMidR": 0.74, "glowMidG": 0.38, "glowMidB": 1.00,
+            "glowEndR": 1.00, "glowEndG": 0.62, "glowEndB": 0.40,
+            "cardTopR": 0.13, "cardTopG": 0.06, "cardTopB": 0.28,
+            "cardMidR": 0.08, "cardMidG": 0.035, "cardMidB": 0.19,
+            "cardBottomR": 0.12, "cardBottomG": 0.05, "cardBottomB": 0.25,
         ]
     )
 
@@ -1415,7 +1511,7 @@ extension StudioItem {
     ]
 
     private static let animatedCreditCardPresets: [StudioComponentPreset] = [
-        .init(id: "default", label: "PR 3 Original", values: [:]),
+        .init(id: "default", label: "Original", values: [:]),
     ]
 
     private static let blurFocusPresets: [StudioComponentPreset] = [

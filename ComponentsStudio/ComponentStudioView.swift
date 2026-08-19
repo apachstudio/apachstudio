@@ -34,12 +34,10 @@ struct ComponentStudioView: View {
 // table (1px vertical rails + horizontal separators) of bold rows with a
 // trailing arrow, and a footer. Content/taxonomy come from `StudioCatalog`.
 
-/// Shared "Swiftui Components Studio" tag — pinned to the same screen position
-/// (offset from the safe-area top + trailing inset) on the home and detail
-/// pages so it reads as one persistent header element.
+/// Shared "Swiftui Components Studio" tag for the home screen.
 private enum StudioBreadcrumb {
     static let text = "Swiftui   Components   Studio"
-    static let topInset: CGFloat = 46
+    static let topInset: CGFloat = 41
     static let trailingInset: CGFloat = 44
 
     static var view: some View {
@@ -47,6 +45,8 @@ private enum StudioBreadcrumb {
             .font(AppFont.display(10))
             .kerning(-0.4)
             .foregroundStyle(Aurora.ink)
+            .background(Color.clear)
+            .allowsHitTesting(false)
     }
 }
 
@@ -192,9 +192,13 @@ private struct ComponentStudioStage: View {
         _specState = State(initialValue: ComponentSpecState(defaults: item.specDefaults))
     }
 
+    private var stageBackground: Color {
+        item.prefersDarkStageChrome ? .black : Aurora.canvas
+    }
+
     var body: some View {
         ZStack {
-            Aurora.canvas.ignoresSafeArea()
+            stageBackground.ignoresSafeArea()
             stageWithToolbar
                 .contentShape(Rectangle())
                 .onTapGesture(count: 3) {
@@ -202,14 +206,6 @@ private struct ComponentStudioStage: View {
                         recordingMode.toggle()
                     }
                     haptic()
-                }
-                // Breadcrumb pinned to the same position as on the home screen.
-                .overlay(alignment: .topTrailing) {
-                    if item.usesShaderChrome && !recordingMode {
-                        StudioBreadcrumb.view
-                            .padding(.top, StudioBreadcrumb.topInset)
-                            .padding(.trailing, StudioBreadcrumb.trailingInset)
-                    }
                 }
         }
         // Full-screen (landscape) toggle — Shaders category only (not Dotted).
@@ -237,6 +233,7 @@ private struct ComponentStudioStage: View {
         // so the system nav bar is hidden for them.
         .navigationBarBackButtonHidden(item.usesShaderChrome)
         .toolbar((recordingMode || item.usesShaderChrome) ? .hidden : .visible, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     @ViewBuilder
@@ -252,10 +249,26 @@ private struct ComponentStudioStage: View {
                     .frame(maxWidth: item.maxWidth)
                     .padding(.horizontal, item.horizontalPadding)
             }
-        } else {
+        } else if item == .bubbleCard {
             stageContent()
-                .frame(maxWidth: item.maxWidth)
+                .frame(maxWidth: item.maxWidth, maxHeight: .infinity)
                 .padding(.horizontal, item.horizontalPadding)
+                .overlay(alignment: .topLeading) {
+                    if !recordingMode {
+                        StudioStageHeadline(title: item.title)
+                            .padding(.horizontal, StudioLayout.horizontalPadding)
+                            .padding(.top, StudioLayout.belowNavBar)
+                    }
+                }
+        } else {
+            GeometryReader { proxy in
+                ScrollView(.vertical, showsIndicators: true) {
+                    stageContent()
+                        .frame(maxWidth: item.maxWidth)
+                        .frame(minHeight: proxy.size.height, alignment: .top)
+                        .padding(.horizontal, item.horizontalPadding)
+                }
+            }
         }
     }
 
@@ -441,10 +454,10 @@ struct StudioCategory: Identifiable {
 private enum StudioCatalog {
     private static let categoryDefinitions: [(id: String, title: String, items: [StudioItem])] = [
         (id: "shaders", title: "Shaders", items: [
-            .flame, .flameInGlass, .neumorphicPills, .dottedBackground, .neumorphicDigit, .photoRipple2,
+            .flameInGlass, .neumorphicPills, .dottedBackground, .photoRipple2,
             .photoRipple, .refractiveText, .bubbleTextRipple,
         ]),
-        (id: "cards", title: "Cards", items: [.animatedCreditCard, .creditCard3D, .bubbleCard]),
+        (id: "cards", title: "Cards", items: [.animatedCreditCard, .bubbleCard]),
         (id: "pills", title: "Pills", items: [.sampleGlassPill, .talkPill]),
         (id: "loading", title: "Loading", items: [.blurFocusLoading]),
         (id: "scroll", title: "Scroll", items: [.verticalCardDeck]),

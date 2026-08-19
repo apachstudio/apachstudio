@@ -146,6 +146,31 @@ final class ComponentSpecState {
 
 // MARK: - Shared studio layout metrics
 
+struct StudioStageHeadline: View {
+    let title: String
+    var isCompact: Bool = false
+    var color: Color = .black
+
+    var body: some View {
+        Text(displayTitle)
+            .font(AppFont.display(isCompact ? 30 : 40))
+            .kerning(-0.8)
+            .foregroundStyle(color)
+            .background(Color.clear)
+            .environment(\.colorScheme, .light)
+            .lineLimit(2)
+            .minimumScaleFactor(0.72)
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: 300, alignment: .leading)
+    }
+
+    private var displayTitle: String {
+        let words = title.split(separator: " ", omittingEmptySubsequences: true)
+        guard words.count > 1 else { return title }
+        return String(words[0]) + "\n" + words.dropFirst().joined(separator: " ")
+    }
+}
+
 /// Layout constants shared across studio component stages.
 enum StudioLayout {
     /// Gap from the navigation bar's bottom edge (where the "Back" chevron
@@ -390,9 +415,7 @@ struct StudioPresetControlBar: View {
     }
 
     var body: some View {
-        VStack(spacing: 10) {
-            collapseHeader
-
+        VStack(spacing: 12) {
             StudioPresetChipRow(
                 defaultPreset: defaultPreset,
                 builtInPresets: builtInPresets,
@@ -409,7 +432,6 @@ struct StudioPresetControlBar: View {
                 onDelete: onDeletePin
             )
 
-            Divider().opacity(0.18)
             expandedPanel
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
@@ -429,46 +451,33 @@ struct StudioPresetControlBar: View {
         }
     }
 
-    private var collapseHeader: some View {
-        HStack {
-            Spacer()
-            Button(action: onCollapse) {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Aurora.ink.opacity(0.45))
-                    .frame(width: 28, height: 20)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Collapse controls")
-        }
-    }
-
     private var expandedPanel: some View {
-        VStack(spacing: 12) {
-            if showCode {
-                codeBox
-                    .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
-                copyAffordance
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-            } else {
-                if categories.count > 1 {
-                    categorySwitcher
-                }
-                VStack(spacing: 10) {
-                    ForEach(activeCategory.controls) { control in
-                        controlView(control)
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(spacing: 12) {
+                if showCode {
+                    codeContent
+                        .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
+                    copyAffordance
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                } else {
+                    if categories.count > 1 {
+                        categorySwitcher
+                    }
+                    VStack(spacing: 10) {
+                        ForEach(activeCategory.controls) { control in
+                            controlView(control)
+                        }
+                    }
+                    .padding(12)
+                    .background {
+                        RoundedRectangle(cornerRadius: innerCornerRadius, style: .continuous)
+                            .fill(.ultraThinMaterial)
                     }
                 }
-                .padding(12)
-                .background {
-                    RoundedRectangle(cornerRadius: innerCornerRadius, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                }
             }
+            .padding(.horizontal, 4)
         }
-        .padding(.top, 4)
-        .padding(.horizontal, 4)
+        .frame(maxHeight: 150)
     }
 
     private var categorySwitcher: some View {
@@ -611,20 +620,17 @@ struct StudioPresetControlBar: View {
         .accessibilityLabel("Copy SwiftUI code")
     }
 
-    private var codeBox: some View {
-        ScrollView {
-            Text(codeGenerator())
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(Aurora.ink.opacity(0.88))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .textSelection(.enabled)
-        }
-        .frame(maxHeight: 200)
-        .background {
-            RoundedRectangle(cornerRadius: innerCornerRadius, style: .continuous)
-                .fill(.ultraThinMaterial)
-        }
+    private var codeContent: some View {
+        Text(codeGenerator())
+            .font(.system(size: 10, weight: .medium, design: .monospaced))
+            .foregroundStyle(Aurora.ink.opacity(0.88))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .textSelection(.enabled)
+            .background {
+                RoundedRectangle(cornerRadius: innerCornerRadius, style: .continuous)
+                    .fill(.ultraThinMaterial)
+            }
     }
 
     private func performCopy() {
@@ -672,6 +678,22 @@ struct UnifiedStudioStage<Content: View>: View {
     private let toolboxMorphAnim: Animation =
         .spring(response: 0.55, dampingFraction: 0.78)
 
+    private var isEditingControls: Bool {
+        showToolbar && (controlBarExpanded || showCode)
+    }
+
+    private var usesNativeStageScrolling: Bool {
+        item == .verticalCardDeck
+    }
+
+    private var usesCenteredStageContent: Bool {
+        item == .searchPillRest || item == .sampleGlassPill || item == .talkPill
+    }
+
+    private var showsStageHeadline: Bool {
+        showToolbar && !item.usesShaderChrome && !usesNativeStageScrolling && !usesCenteredStageContent
+    }
+
     init(
         item: StudioItem,
         sheet: ComponentSpecSheet,
@@ -690,76 +712,91 @@ struct UnifiedStudioStage<Content: View>: View {
     }
 
     var body: some View {
-        ZStack {
-            stageScrollContent
-
-            if showToolbar {
-                VStack {
-                    Spacer()
-                    VStack(spacing: 16) {
-                        if controlBarExpanded || showCode {
-                            StudioPresetControlBar(
-                                defaultPreset: defaultPreset,
-                                builtInPresets: builtInPresets,
-                                pinnedPresets: pinnedPresets,
-                                sheet: sheet,
-                                state: state,
-                                selectedPresetID: $selectedPresetID,
-                                isExpanded: $controlBarExpanded,
-                                showCode: $showCode,
-                                onCollapse: collapseControlBar,
-                                onAddPin: pinCurrentConfiguration,
-                                onResetDefault: resetDefaultPreset,
-                                onDeletePin: deletePinnedPreset
-                            ) {
-                                item.swiftCodeSnippet(
-                                    state: state,
-                                    presetLabel: allPresets.first { $0.id == selectedPresetID }?.label ?? "Custom"
-                                )
-                            }
-                            .transition(.opacity.combined(with: .move(edge: .bottom)))
-                        }
-                        HStack(spacing: 12) {
-                            // Quick-access preset pills beside the FABs while
-                            // the full panel is closed — tap to apply instantly.
-                            // Only Dotted Background opts into this row.
-                            if item == .dottedBackground && !(controlBarExpanded || showCode) {
-                                quickPresetPills
-                            } else {
-                                Spacer()
-                            }
-                            // Dotted Background shows only the quick pills — no
-                            // customize / tools FABs.
-                            if item != .dottedBackground {
-                                customizeFAB
-                                toolsFAB
-                            }
-                        }
-                    }
-                    .padding(.horizontal, StudioLayout.horizontalPadding)
-                    .padding(.bottom, 28)
+        stageScrollContent
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .contentShape(Rectangle())
+            .onTapGesture { dismissToolbarIfNeeded() }
+            .overlay(alignment: .bottom) {
+                if showToolbar {
+                    toolbarDock
                 }
             }
+    }
+
+    private var toolbarDock: some View {
+        VStack(spacing: 16) {
+            if controlBarExpanded || showCode {
+                StudioPresetControlBar(
+                    defaultPreset: defaultPreset,
+                    builtInPresets: builtInPresets,
+                    pinnedPresets: pinnedPresets,
+                    sheet: sheet,
+                    state: state,
+                    selectedPresetID: $selectedPresetID,
+                    isExpanded: $controlBarExpanded,
+                    showCode: $showCode,
+                    onCollapse: collapseControlBar,
+                    onAddPin: pinCurrentConfiguration,
+                    onResetDefault: resetDefaultPreset,
+                    onDeletePin: deletePinnedPreset
+                ) {
+                    item.swiftCodeSnippet(
+                        state: state,
+                        presetLabel: allPresets.first { $0.id == selectedPresetID }?.label ?? "Custom"
+                    )
+                }
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+
+            HStack(spacing: 12) {
+                if item == .dottedBackground && !(controlBarExpanded || showCode) {
+                    quickPresetPills
+                } else {
+                    Spacer()
+                }
+
+                customizeFAB
+                toolsFAB
+            }
         }
+        .padding(.horizontal, StudioLayout.horizontalPadding)
+        .padding(.bottom, 28)
+        .frame(maxWidth: .infinity, alignment: .bottomTrailing)
     }
 
     /// Scrolls stage content when the specs panel is open so the card stays
     /// visible above the floating toolbar.
     @ViewBuilder
     private var stageScrollContent: some View {
-        if showToolbar && (controlBarExpanded || showCode) {
-            ScrollView(.vertical, showsIndicators: false) {
-                content()
+        if usesNativeStageScrolling {
+            content()
+        } else if usesCenteredStageContent {
+            content()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        } else {
+            ScrollView(.vertical, showsIndicators: true) {
+                stagePageContent
                     .padding(.bottom, specsPanelBottomInset)
             }
-        } else {
-            content()
         }
     }
 
+    private var stagePageContent: some View {
+        VStack(alignment: .leading, spacing: isEditingControls ? 14 : StudioLayout.titleToCardSpacing) {
+            if showsStageHeadline {
+                StudioStageHeadline(title: item.title, isCompact: isEditingControls)
+                    .padding(.horizontal, StudioLayout.horizontalPadding)
+                    .padding(.top, isEditingControls ? 4 : StudioLayout.belowNavBar)
+            }
+
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .top)
+    }
+
     private var specsPanelBottomInset: CGFloat {
-        if showCode { return 420 }
-        if controlBarExpanded { return 340 }
+        if showCode { return 620 }
+        if controlBarExpanded { return 520 }
         return 80
     }
 
@@ -858,6 +895,11 @@ struct UnifiedStudioStage<Content: View>: View {
             showCode = false
             controlBarExpanded = false
         }
+    }
+
+    private func dismissToolbarIfNeeded() {
+        guard controlBarExpanded || showCode else { return }
+        collapseControlBar()
     }
 
     private func pinCurrentConfiguration() {
