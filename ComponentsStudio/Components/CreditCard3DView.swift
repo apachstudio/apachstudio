@@ -28,7 +28,7 @@ struct CreditCard3DView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let width = min(proxy.size.width - Theme.Spacing.xxl, 520)
+            let width = max(0, min(proxy.size.width - Theme.Spacing.xxl, 520))
             let height = width / Metrics.aspectRatio
 
             ZStack {
@@ -44,8 +44,12 @@ struct CreditCard3DView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Purple credit card with an animated AI glow")
-        .accessibilityHint("Drag to tilt the card in three dimensions")
+        .accessibilityLabel("Purple credit card with an AI glow")
+        .accessibilityHint(
+            reduceMotion
+                ? "Three-dimensional motion is disabled by Reduce Motion"
+                : "Drag to tilt the card in three dimensions"
+        )
     }
 
     private func card(width: CGFloat, height: CGFloat) -> some View {
@@ -135,7 +139,7 @@ struct CreditCard3DView: View {
                 embossedCapsule(width: 104)
             }
 
-            HStack(spacing: Theme.Spacing.md) {
+            HStack(spacing: Theme.Spacing.xxs) {
                 ForEach(0..<19, id: \.self) { _ in
                     embossedDot
                 }
