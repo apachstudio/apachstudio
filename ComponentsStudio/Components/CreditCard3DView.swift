@@ -7,23 +7,21 @@ struct CreditCard3DView: View {
         static let aspectRatio: CGFloat = 1.586
         static let cornerRadius: CGFloat = 24
         static let edgeDepth: CGFloat = 8
-        static let maxTilt: Double = 12
-        static let strokePeriod: Double = 4.2
-        static let strokeWidth: CGFloat = 0.9
-        static let particleCount = 24
     }
+
+    var specs = CreditCard3DSpecs()
 
     @GestureState private var dragTranslation: CGSize = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var tiltX: Double {
         guard !reduceMotion else { return 0 }
-        return max(-Metrics.maxTilt, min(Metrics.maxTilt, -Double(dragTranslation.height) / 12))
+        return max(-specs.maxTilt, min(specs.maxTilt, -Double(dragTranslation.height) / 12))
     }
 
     private var tiltY: Double {
         guard !reduceMotion else { return 0 }
-        return max(-Metrics.maxTilt, min(Metrics.maxTilt, Double(dragTranslation.width) / 12))
+        return max(-specs.maxTilt, min(specs.maxTilt, Double(dragTranslation.width) / 12))
     }
 
     var body: some View {
@@ -33,8 +31,16 @@ struct CreditCard3DView: View {
 
             ZStack {
                 card(width: width, height: height)
-                    .rotation3DEffect(.degrees(tiltX), axis: (x: 1, y: 0, z: 0), perspective: 0.55)
-                    .rotation3DEffect(.degrees(tiltY), axis: (x: 0, y: 1, z: 0), perspective: 0.55)
+                    .rotation3DEffect(
+                        .degrees(tiltX),
+                        axis: (x: 1, y: 0, z: 0),
+                        perspective: specs.perspective
+                    )
+                    .rotation3DEffect(
+                        .degrees(tiltY),
+                        axis: (x: 0, y: 1, z: 0),
+                        perspective: specs.perspective
+                    )
                     .animation(
                         reduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.78),
                         value: dragTranslation
@@ -57,7 +63,7 @@ struct CreditCard3DView: View {
             let time = timeline.date.timeIntervalSinceReferenceDate
             let phase = reduceMotion
                 ? 0.0
-                : time.truncatingRemainder(dividingBy: Metrics.strokePeriod) / Metrics.strokePeriod
+                : time.truncatingRemainder(dividingBy: specs.strokePeriod) / specs.strokePeriod
             let angle = phase * 360
 
             ZStack {
@@ -195,7 +201,7 @@ struct CreditCard3DView: View {
                 )
             )
             .blur(radius: 10)
-            .opacity(0.13)
+            .opacity(specs.auraOpacity)
             .allowsHitTesting(false)
     }
 
@@ -213,7 +219,7 @@ struct CreditCard3DView: View {
                     center: .center,
                     angle: .degrees(angle)
                 ),
-                lineWidth: Metrics.strokeWidth
+                lineWidth: specs.strokeWidth
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Metrics.cornerRadius, style: .continuous)
@@ -223,20 +229,23 @@ struct CreditCard3DView: View {
     }
 
     private func particleTrail(size: CGSize, phase: Double) -> some View {
+        let particleCount = max(2, Int(specs.particleCount.rounded()))
+        let particleDistance = CGFloat(specs.particleDistance)
+
         Canvas { context, _ in
-            for index in 0..<Metrics.particleCount {
-                let progress = Double(index) / Double(Metrics.particleCount - 1)
-                let trailPhase = wrapped(phase - progress * 0.22)
+            for index in 0..<particleCount {
+                let progress = Double(index) / Double(particleCount - 1)
+                let trailPhase = wrapped(phase - progress * specs.particleTrail)
                 let rim = roundedRectanglePoint(
                     phase: trailPhase,
                     size: size,
                     cornerRadius: Metrics.cornerRadius
                 )
                 let flutter = sin(Double(index * 17) + phase * .pi * 8)
-                let radialOffset = CGFloat(flutter) * 5
+                let radialOffset = CGFloat(flutter) * particleDistance * 0.7
                 let point = CGPoint(
-                    x: rim.point.x + rim.normal.dx * (7 + radialOffset),
-                    y: rim.point.y + rim.normal.dy * (7 + radialOffset)
+                    x: rim.point.x + rim.normal.dx * (particleDistance + radialOffset),
+                    y: rim.point.y + rim.normal.dy * (particleDistance + radialOffset)
                 )
                 let radius = CGFloat(1.2 + (1 - progress) * 2.2)
                 let opacity = pow(1 - progress, 1.5) * (0.55 + 0.45 * abs(flutter))

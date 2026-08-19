@@ -340,7 +340,8 @@ private struct ComponentStudioStage: View {
             )
 
         case .creditCard3D:
-            CreditCard3DView()
+            let specs = CreditCard3DSpecs(specState, sheet: sheet!)
+            CreditCard3DView(specs: specs)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         case .verticalCardDeck:
