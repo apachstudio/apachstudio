@@ -120,56 +120,46 @@ struct ExpandingBubbleCard: View {
     private var orbitRadius: CGFloat   { size * position.orbitRadiusFactor }
 
     var body: some View {
-        ZStack {
-            // -- Cards canvas --
-            // Holds main + 6 satellites. Independently draggable so
-            // the whole bubble composition can be parked anywhere on
-            // the stage without moving the control bar.
-            cardsCanvas
-                .offset(
-                    x: canvasSavedOffset.width + canvasDragTranslation.width,
-                    y: canvasSavedOffset.height + canvasDragTranslation.height
-                )
-                .gesture(canvasDragGesture)
+        cardsCanvas
+            .offset(
+                x: canvasSavedOffset.width + canvasDragTranslation.width,
+                y: canvasSavedOffset.height + canvasDragTranslation.height
+            )
+            .gesture(canvasDragGesture)
+            // No `.clipped()` — satellites are allowed to bleed off the
+            // device edges when expanded. That's the intended "scattered"
+            // feel.
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture { dismissToolbarIfNeeded() }
+            .overlay(alignment: .bottom) {
+                toolbarDock
+            }
+    }
 
-            // -- Control bar (independent) --
-            // Floating Liquid Glass toolbox + a sibling row UNDER it
-            // that holds the "Customize" text link CENTRED and the
-            // tools FAB pinned to the RIGHT. The row stays visible
-            // always — the tools FAB doubles as the dismiss for code
-            // view (its active state takes the inverted dark look).
-            VStack {
+    private var toolbarDock: some View {
+        VStack(spacing: 16) {
+            if controlBarExpanded || showCode {
+                MotionControlBar(
+                    preset: $preset,
+                    config: $config,
+                    position: $position,
+                    isExpanded: $controlBarExpanded,
+                    showCode: $showCode,
+                    onCollapse: collapseControlBar
+                )
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+
+            HStack(spacing: 8) {
                 Spacer()
-                VStack(spacing: 16) {
-                    if controlBarExpanded || showCode {
-                        MotionControlBar(
-                            preset: $preset,
-                            config: $config,
-                            position: $position,
-                            isExpanded: $controlBarExpanded,
-                            showCode: $showCode,
-                            onCollapse: collapseControlBar
-                        )
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
-                    }
-                    // Customize is now its own FAB sitting next to
-                    // the tools FAB on the right edge of the row.
-                    // Both FABs share the same compact 20 pt frame
-                    // and active/rest visual language.
-                    HStack(spacing: 8) {
-                        Spacer()
-                        customizeFAB
-                        toolsFAB
-                    }
-                }
-                .padding(.horizontal, StudioLayout.horizontalPadding)
-                .padding(.bottom, StudioLayout.horizontalPadding)
+                customizeFAB
+                toolsFAB
             }
         }
-        // No `.clipped()` — satellites are allowed to bleed off the
-        // device edges when expanded. That's the intended "scattered"
-        // feel.
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, StudioLayout.horizontalPadding)
+        .padding(.bottom, StudioLayout.horizontalPadding)
+        .frame(maxWidth: .infinity, alignment: .bottomTrailing)
     }
 
     /// Tools FAB — right edge of the sibling row. Toggles the code
@@ -226,6 +216,11 @@ struct ExpandingBubbleCard: View {
             showCode = false
             controlBarExpanded = false
         }
+    }
+
+    private func dismissToolbarIfNeeded() {
+        guard controlBarExpanded || showCode else { return }
+        collapseControlBar()
     }
 
     /// The draggable bubble composition. Satellites wrapped in a
@@ -597,10 +592,8 @@ private struct MotionControlBar: View {
     private let inkSoft: Color  = Color.black.opacity(0.08)
 
     var body: some View {
-        VStack(spacing: 10) {
-            collapseHeader
+        VStack(spacing: 12) {
             chipRow
-            Divider().opacity(0.18)
             slidersPanel
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
@@ -652,23 +645,6 @@ private struct MotionControlBar: View {
             shape
                 .fill(.ultraThinMaterial)
                 .overlay(shape.fill(Color.white.opacity(tint)))
-        }
-    }
-
-    // MARK: - Collapse header
-
-    private var collapseHeader: some View {
-        HStack {
-            Spacer()
-            Button(action: onCollapse) {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Aurora.ink.opacity(0.45))
-                    .frame(width: 28, height: 20)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Collapse controls")
         }
     }
 

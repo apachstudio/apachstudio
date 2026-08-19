@@ -5,6 +5,8 @@ import SwiftUI
 struct ShaderPageLayout<Content: View, Accessory: View>: View {
     let title: String
     var aspectRatio: CGFloat? = nil
+    var titleColor: Color = .black
+    var chromeColor: Color = Aurora.iconInk
     let accessory: Accessory
     @ViewBuilder var card: () -> Content
 
@@ -15,35 +17,40 @@ struct ShaderPageLayout<Content: View, Accessory: View>: View {
     init(
         title: String,
         aspectRatio: CGFloat? = nil,
+        titleColor: Color = .black,
         @ViewBuilder accessory: () -> Accessory,
         @ViewBuilder card: @escaping () -> Content
     ) {
         self.title = title
         self.aspectRatio = aspectRatio
+        self.titleColor = titleColor
         self.accessory = accessory()
         self.card = card
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            navRow
-                .padding(.bottom, 24)
-            VStack(alignment: .leading, spacing: StudioLayout.titleToCardSpacing) {
-                titleView
-                accessory
-                Group {
-                    if let aspectRatio {
-                        card()
-                            .aspectRatio(aspectRatio, contentMode: .fit)
-                    } else {
-                        card()
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(alignment: .leading, spacing: 0) {
+                navRow
+                    .padding(.bottom, 24)
+                VStack(alignment: .leading, spacing: StudioLayout.titleToCardSpacing) {
+                    titleView
+                    accessory
+                    Group {
+                        if let aspectRatio {
+                            card()
+                                .aspectRatio(aspectRatio, contentMode: .fit)
+                        } else {
+                            card()
+                        }
                     }
+                    .clipShape(cardShape)
                 }
-                .clipShape(cardShape)
             }
+            .padding(.horizontal, StudioLayout.horizontalPadding)
+            .padding(.top, StudioLayout.belowNavBar)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .padding(.horizontal, StudioLayout.horizontalPadding)
-        .padding(.top, StudioLayout.belowNavBar)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
@@ -69,29 +76,9 @@ struct ShaderPageLayout<Content: View, Accessory: View>: View {
         }
     }
 
-    private var titleLines: [String] {
-        let words = title.split(separator: " ").map(String.init)
-        guard words.count > 1 else { return [title] }
-        let mid = (words.count + 1) / 2
-        return [
-            words[..<mid].joined(separator: " "),
-            words[mid...].joined(separator: " ")
-        ]
-    }
-
     private var titleView: some View {
-        // SF Pro Display Bold, 40pt, split across two lines like the design
-        // ("Dotted" / "Background") — Figma node 103:3914.
-        VStack(alignment: .leading, spacing: -4) {
-            ForEach(titleLines, id: \.self) { line in
-                Text(line)
-                    .font(AppFont.display(40))
-                    .kerning(-0.4)
-                    .foregroundStyle(Aurora.ink)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .fixedSize(horizontal: false, vertical: true)
+        StudioStageHeadline(title: title, color: titleColor)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -99,8 +86,9 @@ extension ShaderPageLayout where Accessory == EmptyView {
     init(
         title: String,
         aspectRatio: CGFloat? = nil,
+        titleColor: Color = .black,
         @ViewBuilder card: @escaping () -> Content
     ) {
-        self.init(title: title, aspectRatio: aspectRatio, accessory: { EmptyView() }, card: card)
+        self.init(title: title, aspectRatio: aspectRatio, titleColor: titleColor, accessory: { EmptyView() }, card: card)
     }
 }

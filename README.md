@@ -35,6 +35,11 @@ ComponentsStudio/
 Add new components as their own `.swift` file under `ComponentsStudio/`, then
 register them in `StudioItem` (inside `ComponentStudioView.swift`).
 
+Components with tunable specs should use the shared `UnifiedStudioStage`
+instead of custom toolbar chrome. The unified stage owns the bottom FAB dock
+and expanded controls panel; expanded content is capped at 150pt with native
+scrolling so stage changes stay visible while tuning.
+
 ---
 
 ## Design system

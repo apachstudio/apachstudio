@@ -107,7 +107,9 @@ struct SearchBoxView: View {
         // Gaining keyboard focus latches the bar open. Losing focus (tapping
         // the blank canvas) does NOT collapse it — only `submit()` does.
         .onChange(of: focused) { _, isFocused in
-            if isFocused { expanded = true }
+            if isFocused || expanded {
+                expanded = true
+            }
         }
         .task { await runTypewriter() }
         .task { await blinkCaret() }

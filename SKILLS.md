@@ -219,6 +219,20 @@ Pure material — no glass effect. The white overlay gives the
 
 ---
 
+## Studio component chrome
+
+Components with runtime knobs should register a `ComponentSpecSheet` on
+`StudioItem` and render through `UnifiedStudioStage`. Do not build a new
+per-component toolbar unless the component truly owns a bespoke interaction
+model.
+
+`UnifiedStudioStage` provides the shared bottom FAB dock plus the expanded
+controls panel. Expanded content is capped at 150pt with native scrolling.
+Keep new components focused on their own view and specs; the stage chrome
+should stay centralized so every component can be tuned consistently.
+
+---
+
 ## Gestures
 
 ### Drag (the canvas pattern)
