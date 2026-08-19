@@ -260,8 +260,8 @@ private struct CreditCardParticles: View {
         let direction = Double.pi / 2 + spread
         let speed = CreditCardParticleSpecs.speed(
             for: index,
-            minimum: specs.minimumSpeed,
-            maximum: specs.maximumSpeed
+            minimum: min(specs.minimumSpeed, specs.maximumSpeed),
+            maximum: max(specs.minimumSpeed, specs.maximumSpeed)
         )
         let diameter = CreditCardParticleSpecs.diameter(for: index)
         let opacity = CreditCardParticleSpecs.opacity(
