@@ -34,12 +34,12 @@ struct CreditCard3DView: View {
                     .rotation3DEffect(
                         .degrees(tiltX),
                         axis: (x: 1, y: 0, z: 0),
-                        perspective: specs.perspective
+                        perspective: CGFloat(specs.perspective)
                     )
                     .rotation3DEffect(
                         .degrees(tiltY),
                         axis: (x: 0, y: 1, z: 0),
-                        perspective: specs.perspective
+                        perspective: CGFloat(specs.perspective)
                     )
                     .animation(
                         reduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.78),
@@ -219,7 +219,7 @@ struct CreditCard3DView: View {
                     center: .center,
                     angle: .degrees(angle)
                 ),
-                lineWidth: specs.strokeWidth
+                lineWidth: CGFloat(specs.strokeWidth)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Metrics.cornerRadius, style: .continuous)
