@@ -344,6 +344,11 @@ private struct ComponentStudioStage: View {
             CreditCard3DView(specs: specs)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+        case .animatedCreditCard:
+            let specs = AnimatedCreditCardSpecs(specState, sheet: sheet!)
+            AnimatedCreditCardView(specs: specs)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
         case .verticalCardDeck:
             let specs = PlaceDeckSpecs(specState, sheet: sheet!)
             PlaceDeckView(
@@ -439,7 +444,7 @@ private enum StudioCatalog {
             .flame, .flameInGlass, .neumorphicPills, .dottedBackground, .neumorphicDigit, .photoRipple2,
             .photoRipple, .refractiveText, .bubbleTextRipple,
         ]),
-        (id: "cards", title: "Cards", items: [.creditCard3D, .bubbleCard]),
+        (id: "cards", title: "Cards", items: [.animatedCreditCard, .creditCard3D, .bubbleCard]),
         (id: "pills", title: "Pills", items: [.sampleGlassPill, .talkPill]),
         (id: "loading", title: "Loading", items: [.blurFocusLoading]),
         (id: "scroll", title: "Scroll", items: [.verticalCardDeck]),
@@ -468,6 +473,7 @@ enum StudioItem: Hashable {
     case blurFocusLoading
     case bubbleCard
     case creditCard3D
+    case animatedCreditCard
     case verticalCardDeck
     case sampleGlassPill
     case talkPill
@@ -498,6 +504,7 @@ enum StudioItem: Hashable {
         case .photoRipple: return studioCatalogDate(2026, 6, 27, 13, 0)
         case .bubbleCard: return studioCatalogDate(2026, 6, 26, 21, 11, 28)
         case .creditCard3D: return studioCatalogDate(2026, 8, 19, 21, 53)
+        case .animatedCreditCard: return studioCatalogDate(2026, 8, 19, 22, 17)
         case .sampleGlassPill: return studioCatalogDate(2026, 6, 28, 12, 35, 0)
         case .talkPill: return studioCatalogDate(2026, 8, 13, 20, 42)
         case .blurFocusLoading: return studioCatalogDate(2026, 6, 26, 21, 4, 5)
@@ -522,6 +529,7 @@ enum StudioItem: Hashable {
         case .blurFocusLoading: return "Summary Blur Loading"
         case .bubbleCard: return "Satelite Cards"
         case .creditCard3D: return "AI Credit Card"
+        case .animatedCreditCard: return "Animated Credit Card"
         case .verticalCardDeck: return "Vertical card deck"
         case .sampleGlassPill: return "Glass Pill"
         case .talkPill: return "Talk Pill"
@@ -555,7 +563,7 @@ enum StudioItem: Hashable {
 
     var maxWidth: CGFloat? {
         switch self {
-        case .bubbleCard, .creditCard3D, .verticalCardDeck, .blurFocusLoading,
+        case .bubbleCard, .creditCard3D, .animatedCreditCard, .verticalCardDeck, .blurFocusLoading,
              .photoRipple, .photoRipple2, .refractiveText, .bubbleTextRipple, .dottedBackground,
              .neumorphicDigit, .neumorphicPills, .flameInGlass, .flame, .sdfLiquid:
             return .infinity
@@ -566,7 +574,7 @@ enum StudioItem: Hashable {
 
     var horizontalPadding: CGFloat {
         switch self {
-        case .bubbleCard, .creditCard3D, .verticalCardDeck, .blurFocusLoading,
+        case .bubbleCard, .creditCard3D, .animatedCreditCard, .verticalCardDeck, .blurFocusLoading,
              .photoRipple, .photoRipple2, .refractiveText, .bubbleTextRipple, .dottedBackground,
              .neumorphicDigit, .neumorphicPills, .flameInGlass, .flame, .sdfLiquid:
             return 0
