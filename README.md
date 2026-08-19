@@ -5,10 +5,6 @@ recording **iOS 26+ Liquid Glass** components. No app shell, no models, no
 backend: each component renders on the same neutral stage so you can iterate
 on visuals and motion in isolation.
 
-This is the spiritual sibling of the `ComponentStudioView` from the
-[Places](https://github.com/andreappubli-svg/bubble-cloud) project, lifted out
-and stripped of anything Aurora- or Places-specific.
-
 ---
 
 ## Run it
