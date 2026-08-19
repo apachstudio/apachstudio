@@ -391,6 +391,7 @@ extension StudioItem {
         case .searchPillRest: return Self.searchPillPresets
         case .blurFocusLoading: return Self.blurFocusPresets
         case .bubbleCard: return []
+        case .creditCard3D: return []
         case .verticalCardDeck: return Self.deckPresets
         case .sampleGlassPill: return Self.glassPillPresets
         case .talkPill: return Self.talkPillPresets
@@ -645,6 +646,9 @@ extension StudioItem {
 
         case .bubbleCard:
             return "// Satelite Cards exports code from its embedded toolbar."
+
+        case .creditCard3D:
+            return "// AI Credit Card uses the fixed AI Search motion specification."
 
         case .flameInGlass:
             let s = FlameInGlassSpecs(state, sheet: sheet)
