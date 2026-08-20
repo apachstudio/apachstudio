@@ -1032,7 +1032,7 @@ extension StudioItem {
             "particleGravity": 147.15,
             "rotationEnabled": 1,
             "maxTilt": 12,
-            "perspective": 0.55,
+            "perspective": 0.38,
             "cardDepth": 7,
             "texture": 0.18,
             "glossiness": 0.32,

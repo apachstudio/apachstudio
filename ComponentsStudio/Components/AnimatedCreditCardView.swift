@@ -42,7 +42,7 @@ struct AnimatedCreditCardView: View {
                     perspective: CGFloat(specs.perspective)
                 )
                 .animation(
-                    reduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.78),
+                    reduceMotion ? nil : CreditCardMotion.tiltSpring,
                     value: dragTranslation
                 )
                 .gesture(tiltGesture)
@@ -66,7 +66,7 @@ struct AnimatedCreditCardView: View {
                 .frame(width: size.width, height: size.height)
                 .offset(y: CGFloat(specs.cardDepth))
 
-            CreditCardFace(specs: specs)
+            CreditCardFace(specs: specs, tiltX: tiltX, tiltY: tiltY)
                 .frame(width: size.width, height: size.height)
                 .overlay {
                     CreditCardAura(time: time, specs: specs)
@@ -102,6 +102,8 @@ struct AnimatedCreditCardView: View {
 
 private struct CreditCardFace: View {
     let specs: AnimatedCreditCardSpecs
+    let tiltX: Double
+    let tiltY: Double
 
     var body: some View {
         GeometryReader { proxy in
@@ -129,7 +131,12 @@ private struct CreditCardFace: View {
                     .blendMode(.multiply)
 
                 if specs.glossiness > 0 {
-                    CreditCardGloss(opacity: specs.glossiness)
+                    CreditCardGloss(
+                        opacity: specs.glossiness,
+                        tiltX: tiltX,
+                        tiltY: tiltY,
+                        maximumTilt: specs.maxTilt
+                    )
                         .clipShape(cardShape)
                         .blendMode(.screen)
                 }
@@ -288,6 +295,26 @@ private struct CreditCardTexture: View {
 
 private struct CreditCardGloss: View {
     let opacity: Double
+    let tiltX: Double
+    let tiltY: Double
+    let maximumTilt: Double
+
+    private var normalizedX: Double {
+        guard maximumTilt > 0 else { return 0 }
+        return max(-1, min(1, tiltY / maximumTilt))
+    }
+
+    private var normalizedY: Double {
+        guard maximumTilt > 0 else { return 0 }
+        return max(-1, min(1, tiltX / maximumTilt))
+    }
+
+    private var highlightCenter: UnitPoint {
+        UnitPoint(
+            x: CGFloat(0.5 - normalizedX * 0.32),
+            y: CGFloat(0.5 + normalizedY * 0.24)
+        )
+    }
 
     var body: some View {
         ZStack {
@@ -302,10 +329,14 @@ private struct CreditCardGloss: View {
             )
 
             RadialGradient(
-                colors: [.white.opacity(0.22 * opacity), .clear],
-                center: UnitPoint(x: 0.22, y: 0.06),
+                colors: [
+                    .white.opacity(0.30 * opacity),
+                    .white.opacity(0.08 * opacity),
+                    .clear,
+                ],
+                center: highlightCenter,
                 startRadius: 0,
-                endRadius: 180
+                endRadius: 150
             )
         }
         .allowsHitTesting(false)
@@ -409,6 +440,7 @@ private struct CreditCardParticles: View {
         let age = CreditCardParticleSpecs.age(for: index, at: time)
         let life = (CreditCardParticleSpecs.duration - age)
             / CreditCardParticleSpecs.duration
+        let easedDecay = pow(life, CreditCardParticleSpecs.decayExponent)
         let origin = CreditCardParticleSpecs.origin(
             for: index,
             size: size
@@ -428,8 +460,8 @@ private struct CreditCardParticles: View {
         return Circle()
             .fill(color)
             .frame(width: diameter, height: diameter)
-            .scaleEffect(life)
-            .opacity(life * opacity)
+            .scaleEffect(0.45 + easedDecay * 0.55)
+            .opacity(easedDecay * opacity)
             .modifier(
                 CreditCardParticleMotion(
                     time: age,
@@ -471,6 +503,7 @@ private struct CreditCardParticleMotion: GeometryEffect {
 private enum CreditCardMotion {
     static let highlightOpacity: Double = 0.06
     static let highlightWidth: CGFloat = 0.5
+    static let tiltSpring: Animation = .spring(response: 0.50, dampingFraction: 0.86)
 
     static func phase(at time: Double, period: Double) -> Double {
         guard period > 0 else { return 0 }
@@ -500,7 +533,8 @@ private enum CreditCardMotion {
 }
 
 private enum CreditCardParticleSpecs {
-    static let duration: Double = 2
+    static let duration: Double = 2.6
+    static let decayExponent: Double = 0.62
     static let minimumSpeed: Double = 40
     static let horizontalStart: Double = 0.18
     static let horizontalSpan: Double = 0.64
