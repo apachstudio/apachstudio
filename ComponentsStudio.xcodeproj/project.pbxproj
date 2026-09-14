@@ -38,6 +38,7 @@
 		B67DF599531BB273C4F4D864 /* StudioItemSpecs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 907D48F99D29EA9197950392 /* StudioItemSpecs.swift */; };
 		C2487ECC30374E8C0052DF18 /* CreditCard3DView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2487ECB30374E8C0052DF18 /* CreditCard3DView.swift */; };
 		C2487ECE30374ECD0052DF18 /* AnimatedCreditCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2487ECD30374ECD0052DF18 /* AnimatedCreditCardView.swift */; };
+		C2487ED030375101 /* CardCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2487ECF30375101 /* CardCarouselView.swift */; };
 		CC6AD46A331354F92EB89FE9 /* StudioShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 6DED0A561916E5D83C797441 /* StudioShaders.metal */; };
 		CD2E5A7B8F487A3BB82FA394 /* RefractiveGlassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2FF7BDDD559B8B8DEDE8759 /* RefractiveGlassView.swift */; };
 		CD305111349FA2734D4D858E /* ComponentsStudioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54C1302DB43C101285D2B853 /* ComponentsStudioApp.swift */; };
@@ -81,6 +82,7 @@
 		C06603DDA428049453A230AE /* BundledFontRegistration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledFontRegistration.swift; sourceTree = "<group>"; };
 		C2487ECB30374E8C0052DF18 /* CreditCard3DView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditCard3DView.swift; sourceTree = "<group>"; };
 		C2487ECD30374ECD0052DF18 /* AnimatedCreditCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedCreditCardView.swift; sourceTree = "<group>"; };
+		C2487ECF30375101 /* CardCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardCarouselView.swift; sourceTree = "<group>"; };
 		C59653ED809BFB4B426E4B28 /* PlaceDeckView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceDeckView.swift; sourceTree = "<group>"; };
 		CA8BFA00B1ED0367CBC60333 /* StudioSampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudioSampleData.swift; sourceTree = "<group>"; };
 		CCDC7EB79380405D4DAD776B /* Dripdrop.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Dripdrop.otf; sourceTree = "<group>"; };
@@ -121,6 +123,7 @@
 				7E89F6E5BD6DD81D5F2600D0 /* TalkPillView.swift */,
 				C2487ECB30374E8C0052DF18 /* CreditCard3DView.swift */,
 				C2487ECD30374ECD0052DF18 /* AnimatedCreditCardView.swift */,
+				C2487ECF30375101 /* CardCarouselView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -295,6 +298,7 @@
 				6B8D60E66B0B0C7AFEEB1580 /* RemoteImage.swift in Sources */,
 				708AA7F1FB8FEB0B1424B59B /* SDFLiquidView.swift in Sources */,
 				C2487ECE30374ECD0052DF18 /* AnimatedCreditCardView.swift in Sources */,
+				C2487ED030375101 /* CardCarouselView.swift in Sources */,
 				2CDEF7E20342877EBBF8E3F3 /* SearchBoxView.swift in Sources */,
 				25777C5AF706C754FF717D20 /* SearchModalView.swift in Sources */,
 				F51850633AC66AD8FFCF3C78 /* SearchResultCard.swift in Sources */,
