@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // MARK: - Per-component typed specs
 //
@@ -169,6 +170,140 @@ struct AnimatedCreditCardSpecs: Equatable {
         cardBottomR = sheet.value("cardBottomR", in: state)
         cardBottomG = sheet.value("cardBottomG", in: state)
         cardBottomB = sheet.value("cardBottomB", in: state)
+    }
+}
+
+struct FlexCardFaceSpecs: Equatable {
+    var stop0: Color
+    var stop1: Color
+    var stop2: Color
+}
+
+struct CardCarouselSpecs: Equatable {
+    var detail: Double
+    var intensity: Double
+    var twist: Double
+    var warp: Double
+    var zoom: Double
+    var rotationSpeed: Double
+    var morphSpeed: Double
+    var material: Double
+    var gradientMethod: Double
+    var gradientBalance: Double
+
+    var c1s0R: Double, c1s0G: Double, c1s0B: Double
+    var c1s1R: Double, c1s1G: Double, c1s1B: Double
+    var c1s2R: Double, c1s2G: Double, c1s2B: Double
+    var c2s0R: Double, c2s0G: Double, c2s0B: Double
+    var c2s1R: Double, c2s1G: Double, c2s1B: Double
+    var c2s2R: Double, c2s2G: Double, c2s2B: Double
+
+    var auraPeriod: Double
+    var snakeWidth: Double
+    var strokeLength: Double
+    var strokeEase: Double
+    var strokeSpring: Double
+    var strokeEnabled: Bool
+    var strokeStartR: Double, strokeStartG: Double, strokeStartB: Double
+    var strokeMidR: Double, strokeMidG: Double, strokeMidB: Double
+    var strokeEndR: Double, strokeEndG: Double, strokeEndB: Double
+
+    var particleCount: Int
+    var particleSpeed: Double
+    var particleSpread: Double
+    var particleSize: Double
+    var particleGravity: Double
+    var dustAmount: Double
+
+    var flipResponse: Double
+    var flipDamping: Double
+    var flipLift: Double
+    var flipPerspective: Double
+
+    @MainActor
+    init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
+        detail = sheet.value("detail", in: state)
+        intensity = sheet.value("intensity", in: state)
+        twist = sheet.value("twist", in: state)
+        warp = sheet.value("warp", in: state)
+        zoom = sheet.value("zoom", in: state)
+        rotationSpeed = sheet.value("rotationSpeed", in: state)
+        morphSpeed = sheet.value("morphSpeed", in: state)
+        material = sheet.value("material", in: state)
+        gradientMethod = sheet.value("gradientMethod", in: state)
+        gradientBalance = sheet.value("gradientBalance", in: state) / 100.0
+
+        c1s0R = sheet.value("c1s0R", in: state)
+        c1s0G = sheet.value("c1s0G", in: state)
+        c1s0B = sheet.value("c1s0B", in: state)
+        c1s1R = sheet.value("c1s1R", in: state)
+        c1s1G = sheet.value("c1s1G", in: state)
+        c1s1B = sheet.value("c1s1B", in: state)
+        c1s2R = sheet.value("c1s2R", in: state)
+        c1s2G = sheet.value("c1s2G", in: state)
+        c1s2B = sheet.value("c1s2B", in: state)
+        c2s0R = sheet.value("c2s0R", in: state)
+        c2s0G = sheet.value("c2s0G", in: state)
+        c2s0B = sheet.value("c2s0B", in: state)
+        c2s1R = sheet.value("c2s1R", in: state)
+        c2s1G = sheet.value("c2s1G", in: state)
+        c2s1B = sheet.value("c2s1B", in: state)
+        c2s2R = sheet.value("c2s2R", in: state)
+        c2s2G = sheet.value("c2s2G", in: state)
+        c2s2B = sheet.value("c2s2B", in: state)
+
+        auraPeriod = sheet.value("auraPeriod", in: state)
+        snakeWidth = sheet.value("snakeWidth", in: state)
+        strokeLength = sheet.value("strokeLength", in: state)
+        strokeEase = sheet.value("strokeEase", in: state)
+        strokeSpring = sheet.value("strokeSpring", in: state)
+        strokeEnabled = sheet.value("strokeEnabled", in: state) >= 0.5
+        strokeStartR = sheet.value("strokeStartR", in: state)
+        strokeStartG = sheet.value("strokeStartG", in: state)
+        strokeStartB = sheet.value("strokeStartB", in: state)
+        strokeMidR = sheet.value("strokeMidR", in: state)
+        strokeMidG = sheet.value("strokeMidG", in: state)
+        strokeMidB = sheet.value("strokeMidB", in: state)
+        strokeEndR = sheet.value("strokeEndR", in: state)
+        strokeEndG = sheet.value("strokeEndG", in: state)
+        strokeEndB = sheet.value("strokeEndB", in: state)
+
+        particleCount = Int(sheet.value("particleCount", in: state).rounded())
+        particleSpeed = sheet.value("particleSpeed", in: state)
+        particleSpread = sheet.value("particleSpread", in: state) * .pi
+        particleSize = sheet.value("particleSize", in: state)
+        particleGravity = sheet.value("particleGravity", in: state)
+        dustAmount = sheet.value("dustAmount", in: state)
+
+        flipResponse = sheet.value("flipResponse", in: state)
+        flipDamping = sheet.value("flipDamping", in: state)
+        flipLift = sheet.value("flipLift", in: state)
+        flipPerspective = sheet.value("flipPerspective", in: state)
+    }
+
+    func cardSpecs(_ kind: FlexCardKind) -> FlexCardFaceSpecs {
+        switch kind {
+        case .credit:
+            return FlexCardFaceSpecs(
+                stop0: Color(red: c1s0R, green: c1s0G, blue: c1s0B),
+                stop1: Color(red: c1s1R, green: c1s1G, blue: c1s1B),
+                stop2: Color(red: c1s2R, green: c1s2G, blue: c1s2B)
+            )
+        case .checking:
+            return FlexCardFaceSpecs(
+                stop0: Color(red: c2s0R, green: c2s0G, blue: c2s0B),
+                stop1: Color(red: c2s1R, green: c2s1G, blue: c2s1B),
+                stop2: Color(red: c2s2R, green: c2s2G, blue: c2s2B)
+            )
+        }
+    }
+
+    var strokeColors: [Color] {
+        [
+            Color(red: strokeStartR, green: strokeStartG, blue: strokeStartB),
+            Color(red: strokeMidR, green: strokeMidG, blue: strokeMidB),
+            Color(red: strokeEndR, green: strokeEndG, blue: strokeEndB),
+        ]
     }
 }
 
@@ -539,6 +674,7 @@ extension StudioItem {
         case .bubbleCard: return []
         case .creditCard3D: return Self.creditCard3DPresets
         case .animatedCreditCard: return Self.animatedCreditCardPresets
+        case .cardCarousel: return Self.cardCarouselPresets
         case .verticalCardDeck: return Self.deckPresets
         case .sampleGlassPill: return Self.glassPillPresets
         case .talkPill: return Self.talkPillPresets
@@ -838,6 +974,28 @@ extension StudioItem {
             let gravity: Double = \(fmt(s.particleGravity))
             """
 
+        case .cardCarousel:
+            let s = CardCarouselSpecs(state, sheet: sheet)
+            return """
+            // Generated by Component Studio · preset: \(presetLabel)
+            // Card Carousel — Figma flex cards + Moving gradient fill
+
+            let detail: Double = \(fmt(s.detail))
+            let intensity: Double = \(fmt(s.intensity))
+            let twist: Double = \(fmt(s.twist))
+            let warp: Double = \(fmt(s.warp))
+            let zoom: Double = \(fmt(s.zoom))
+            let rotationSpeed: Double = \(fmt(s.rotationSpeed))
+            let morphSpeed: Double = \(fmt(s.morphSpeed))
+            let material: Int = \(Int(s.material.rounded()))
+            let gradientMethod: Int = \(Int(s.gradientMethod.rounded()))
+            let flipResponse: Double = \(fmt(s.flipResponse))
+            let flipDamping: Double = \(fmt(s.flipDamping))
+            let flipLift: Double = \(fmt(s.flipLift))
+            let particleCount: Int = \(s.particleCount)
+            let dustAmount: Double = \(fmt(s.dustAmount))
+            """
+
         case .flameInGlass:
             let s = FlameInGlassSpecs(state, sheet: sheet)
             return """
@@ -875,6 +1033,7 @@ extension StudioItem {
         .searchPillRest: searchPillSheet,
         .creditCard3D: creditCard3DSheet,
         .animatedCreditCard: animatedCreditCardSheet,
+        .cardCarousel: cardCarouselSheet,
         .blurFocusLoading: blurFocusSheet,
         .verticalCardDeck: deckSheet,
         .sampleGlassPill: glassPillSheet,
@@ -1045,6 +1204,119 @@ extension StudioItem {
             "cardTopR": 0.13, "cardTopG": 0.06, "cardTopB": 0.28,
             "cardMidR": 0.08, "cardMidG": 0.035, "cardMidB": 0.19,
             "cardBottomR": 0.12, "cardBottomG": 0.05, "cardBottomB": 0.25,
+        ]
+    )
+
+    private static let cardCarouselSheet = ComponentSpecSheet(
+        categories: [
+            ComponentSpecCategory(
+                id: "card1",
+                label: "Card 1",
+                controls: [
+                    .init(id: "c1s0", label: "Stop 1", kind: .color),
+                    .init(id: "c1s1", label: "Stop 2", kind: .color),
+                    .init(id: "c1s2", label: "Stop 3", kind: .color),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "card2",
+                label: "Card 2",
+                controls: [
+                    .init(id: "c2s0", label: "Stop 1", kind: .color),
+                    .init(id: "c2s1", label: "Stop 2", kind: .color),
+                    .init(id: "c2s2", label: "Stop 3", kind: .color),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "shader",
+                label: "Shader",
+                controls: [
+                    .init(id: "detail", label: "Detail", kind: .slider(0...5, format: "%.2f")),
+                    .init(id: "intensity", label: "Intensity", kind: .slider(0...5, format: "%.2f")),
+                    .init(id: "twist", label: "Twist", kind: .slider(0...7, format: "%.2f")),
+                    .init(id: "warp", label: "Flow", kind: .slider(0...1.5, format: "%.2f")),
+                    .init(id: "zoom", label: "Zoom", kind: .slider(0...100, format: "%.0f%%")),
+                    .init(id: "rotationSpeed", label: "Speed", kind: .slider(0...100, format: "%.0f%%")),
+                    .init(id: "morphSpeed", label: "Morph", kind: .slider(0...5, format: "%.2f")),
+                    .init(id: "material", label: "Material", kind: .slider(0...4, format: "%.0f")),
+                    .init(id: "gradientMethod", label: "Method", kind: .slider(0...2, format: "%.0f")),
+                    .init(id: "gradientBalance", label: "Balance", kind: .slider(-100...100, format: "%.0f%%")),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "stroke",
+                label: "Stroke",
+                controls: [
+                    .init(id: "strokeEnabled", label: "On", kind: .toggle),
+                    .init(id: "auraPeriod", label: "Cycle", kind: .slider(1.0...8.0, format: "%.1fs")),
+                    .init(id: "snakeWidth", label: "Width", kind: .slider(0.4...5.0, format: "%.1f")),
+                    .init(id: "strokeLength", label: "Length", kind: .slider(0.08...0.62, format: "%.2f")),
+                    .init(id: "strokeStart", label: "Start", kind: .color),
+                    .init(id: "strokeMid", label: "Mid", kind: .color),
+                    .init(id: "strokeEnd", label: "End", kind: .color),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "particles",
+                label: "Dust",
+                controls: [
+                    .init(id: "particleCount", label: "Count", kind: .slider(0...80, format: "%.0f")),
+                    .init(id: "particleSpeed", label: "Speed", kind: .slider(40...220, format: "%.0f")),
+                    .init(id: "particleSpread", label: "Spread", kind: .slider(0.0...0.50, format: "%.2fπ")),
+                    .init(id: "particleSize", label: "Size", kind: .slider(0.8...6.0, format: "%.1f")),
+                    .init(id: "particleGravity", label: "Gravity", kind: .slider(0...400, format: "%.0f")),
+                    .init(id: "dustAmount", label: "Kick", kind: .slider(0...2.0, format: "%.2f")),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "flip",
+                label: "Flip",
+                controls: [
+                    .init(id: "flipResponse", label: "Response", kind: .slider(0.20...0.90, format: "%.2f")),
+                    .init(id: "flipDamping", label: "Damping", kind: .slider(0.40...1.00, format: "%.2f")),
+                    .init(id: "flipLift", label: "Lift", kind: .slider(0...36, format: "%.0f")),
+                    .init(id: "flipPerspective", label: "Persp", kind: .slider(0.20...1.00, format: "%.2f")),
+                ]
+            ),
+        ],
+        defaults: [
+            // Figma Moving gradient defaults (main.ts defineProperties)
+            "detail": 1.78,
+            "intensity": 4.29,
+            "twist": 0.04,
+            "warp": 0.26,
+            "zoom": 72,
+            "rotationSpeed": 12,
+            "morphSpeed": 3.74,
+            "material": 0,
+            "gradientMethod": 0,
+            "gradientBalance": 0,
+            // Cream → periwinkle → magenta (Figma shader defaultStops)
+            "c1s0R": 1.00, "c1s0G": 0.9137254902, "c1s0B": 0.6196078431,
+            "c1s1R": 0.5058823529, "c1s1G": 0.4705882353, "c1s1B": 1.00,
+            "c1s2R": 1.00, "c1s2G": 0.00, "c1s2B": 0.6078431373,
+            "c2s0R": 1.00, "c2s0G": 0.9137254902, "c2s0B": 0.6196078431,
+            "c2s1R": 0.5058823529, "c2s1G": 0.4705882353, "c2s1B": 1.00,
+            "c2s2R": 1.00, "c2s2G": 0.00, "c2s2B": 0.6078431373,
+            "strokeEnabled": 1,
+            "auraPeriod": 4.2,
+            "snakeWidth": 0.9,
+            "strokeLength": 0.24,
+            "strokeEase": 0.0,
+            "strokeSpring": 0.0,
+            "strokeStartR": 1.00, "strokeStartG": 1.00, "strokeStartB": 1.00,
+            "strokeMidR": 1.00, "strokeMidG": 0.45, "strokeMidB": 0.62,
+            "strokeEndR": 0.74, "strokeEndG": 0.38, "strokeEndB": 1.00,
+            "particleCount": 28,
+            "particleSpeed": 80,
+            "particleSpread": 0.22,
+            "particleSize": 2.2,
+            "particleGravity": 147.15,
+            "dustAmount": 1.0,
+            "flipResponse": 0.52,
+            "flipDamping": 0.68,
+            "flipLift": 18,
+            "flipPerspective": 0.55,
         ]
     )
 
@@ -1512,6 +1784,16 @@ extension StudioItem {
 
     private static let animatedCreditCardPresets: [StudioComponentPreset] = [
         .init(id: "default", label: "Original", values: [:]),
+    ]
+
+    private static let cardCarouselPresets: [StudioComponentPreset] = [
+        .init(id: "default", label: "Figma", values: [:]),
+        .init(id: "iridescent", label: "Iridescent", values: [
+            "material": 4,
+            "gradientMethod": 1,
+            "intensity": 3.6,
+            "warp": 0.42,
+        ]),
     ]
 
     private static let blurFocusPresets: [StudioComponentPreset] = [

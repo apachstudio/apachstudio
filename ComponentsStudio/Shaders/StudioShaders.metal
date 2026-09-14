@@ -822,3 +822,487 @@ half4 flameSDF(
 
     return half4(half3(col), 1.0);
 }
+
+// MARK: - Figma "Moving gradient" fill
+//
+// Port of the Figma shader fill in Moving-gradient-source.zip (main.ts).
+// The original renders a displaced cube-sphere with Perlin FBM, OKLab
+// gradient interpolation, and a covering backdrop. This stitchable
+// colorEffect reconstructs the same field per pixel via a ray-sphere
+// hit so the card fill matches the Figma graphic.
+
+constant float MG_PI = 3.14159265;
+constant float MG_TAU = 6.28318530718;
+
+float3 mg_hash33(float3 p) {
+    float3 q = float3(
+        dot(p, float3(127.1, 311.7, 74.7)),
+        dot(p, float3(269.5, 183.3, 246.1)),
+        dot(p, float3(113.5, 271.9, 124.6))
+    );
+    return fract(sin(q) * 43758.5453) * 2.0 - 1.0;
+}
+
+float3 mg_smoother(float3 t) {
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+
+float mg_gradDot(float3 cell, float3 offset, float3 local) {
+    return dot(mg_hash33(cell + offset), local - offset);
+}
+
+float mg_perlin3(float3 p) {
+    float3 cell = floor(p);
+    float3 local = fract(p);
+    float3 w = mg_smoother(local);
+
+    float n000 = mg_gradDot(cell, float3(0.0, 0.0, 0.0), local);
+    float n100 = mg_gradDot(cell, float3(1.0, 0.0, 0.0), local);
+    float n010 = mg_gradDot(cell, float3(0.0, 1.0, 0.0), local);
+    float n110 = mg_gradDot(cell, float3(1.0, 1.0, 0.0), local);
+    float n001 = mg_gradDot(cell, float3(0.0, 0.0, 1.0), local);
+    float n101 = mg_gradDot(cell, float3(1.0, 0.0, 1.0), local);
+    float n011 = mg_gradDot(cell, float3(0.0, 1.0, 1.0), local);
+    float n111 = mg_gradDot(cell, float3(1.0, 1.0, 1.0), local);
+
+    float nx00 = mix(n000, n100, w.x);
+    float nx10 = mix(n010, n110, w.x);
+    float nx01 = mix(n001, n101, w.x);
+    float nx11 = mix(n011, n111, w.x);
+    float nxy0 = mix(nx00, nx10, w.y);
+    float nxy1 = mix(nx01, nx11, w.y);
+    return mix(nxy0, nxy1, w.z) * 1.1547;
+}
+
+float3 mg_rotateOctave(float3 p) {
+    return float3(
+         0.00 * p.x + 0.80 * p.y + 0.60 * p.z,
+        -0.80 * p.x + 0.36 * p.y - 0.48 * p.z,
+        -0.60 * p.x - 0.48 * p.y + 0.64 * p.z
+    );
+}
+
+float mg_fbm(float3 p) {
+    float3 q = p;
+    float total = 0.0;
+    float amplitude = 1.0;
+    float weight = 0.0;
+    for (int i = 0; i < 3; i++) {
+        total += mg_perlin3(q) * amplitude;
+        weight += amplitude;
+        q = mg_rotateOctave(q) * 2.02 + float3(3.7, 1.9, 6.3);
+        amplitude *= 0.48;
+    }
+    return total / max(weight, 0.0001);
+}
+
+float3 mg_warpVector(float3 p) {
+    return float3(
+        mg_perlin3(p),
+        mg_perlin3(p + float3(5.2, 1.3, 2.8)),
+        mg_perlin3(p + float3(1.7, 9.2, 4.4))
+    );
+}
+
+float mg_wrapPhase(float phase) {
+    return phase - floor(phase / MG_TAU) * MG_TAU;
+}
+
+float3 mg_curvedDomainMotion(float morphTime, float3 rates, float3 phases) {
+    return float3(
+        sin(mg_wrapPhase(morphTime * rates.x + phases.x)),
+        sin(mg_wrapPhase(morphTime * rates.y + phases.y)),
+        cos(mg_wrapPhase(morphTime * rates.z + phases.z))
+    );
+}
+
+float3 mg_primaryDomainMotion(float morphTime) {
+    float3 primaryDirection = normalize(float3(0.73, -0.41, 0.55));
+    float3 secondaryDirection = normalize(float3(-0.28, 0.91, 0.31));
+    float3 primaryDrift = primaryDirection * morphTime * 0.105;
+    float3 secondaryDrift = secondaryDirection * morphTime * 0.023;
+    float3 curve = mg_curvedDomainMotion(
+        morphTime,
+        float3(0.071, 0.043, 0.029),
+        float3(0.0, 1.73, 4.11)
+    ) * 0.16;
+    return primaryDrift + secondaryDrift + curve;
+}
+
+float3 mg_warpDomainMotion(float morphTime) {
+    float3 primaryDirection = normalize(float3(-0.46, 0.38, 0.80));
+    float3 secondaryDirection = normalize(float3(0.84, 0.51, -0.18));
+    float3 primaryDrift = primaryDirection * morphTime * 0.137;
+    float3 secondaryDrift = secondaryDirection * morphTime * 0.031;
+    float3 curve = mg_curvedDomainMotion(
+        morphTime,
+        float3(0.089, 0.053, 0.034),
+        float3(2.21, 5.07, 0.83)
+    ) * 0.12;
+    return primaryDrift + secondaryDrift + curve;
+}
+
+float3 mg_gradientDomainMotion(float morphTime) {
+    float3 primaryDirection = normalize(float3(0.32, 0.76, -0.57));
+    float3 secondaryDirection = normalize(float3(-0.88, 0.17, -0.44));
+    float3 primaryDrift = primaryDirection * morphTime * 0.079;
+    float3 secondaryDrift = secondaryDirection * morphTime * 0.019;
+    float3 curve = mg_curvedDomainMotion(
+        morphTime,
+        float3(0.061, 0.037, 0.023),
+        float3(4.37, 0.91, 2.68)
+    ) * 0.19;
+    return primaryDrift + secondaryDrift + curve;
+}
+
+float mg_heightField(float3 direction, float detail, float time, float morphSpeed, float warp) {
+    float detailLevel = clamp(detail / 5.0, 0.0, 1.0);
+    float frequency = mix(1.05, 3.4, detailLevel);
+    float morphTime = time * max(morphSpeed, 0.0);
+    float3 primaryMotion = mg_primaryDomainMotion(morphTime);
+    float3 warpMotion = mg_warpDomainMotion(morphTime);
+    float3 p = direction * frequency + float3(1.7, 3.1, 5.3) + primaryMotion;
+    float3 warped = mg_warpVector(
+        p * 0.55 + warpMotion * 0.42 + float3(0.7, -1.1, 0.4)
+    ) * warp;
+    return mg_fbm(p + warped);
+}
+
+float mg_spreadCoordinate(float raw) {
+    return clamp((raw - 0.5) * 3.0 + 0.5, 0.0, 1.0);
+}
+
+float mg_objectGradientCoordinate(
+    int method,
+    float3 direction,
+    float field,
+    float morphTime
+) {
+    if (method == 1) {
+        float3 gradientMotion = mg_gradientDomainMotion(morphTime);
+        float3 gradientWarpMotion = mg_warpDomainMotion(morphTime * 0.71);
+        float3 p = direction * 1.18 + float3(-2.4, 4.1, 1.6) + gradientMotion;
+        float3 broadWarp = mg_warpVector(
+            p * 0.42 + float3(3.2, -1.7, 2.5) + gradientWarpMotion * 0.19
+        ) * 0.16;
+        return mg_spreadCoordinate(mg_fbm(p + broadWarp) * 0.5 + 0.5);
+    }
+    return mg_spreadCoordinate(field * 0.5 + 0.5);
+}
+
+float3 mg_srgbToLinear(float3 c) {
+    float3 v = max(c, float3(0.0));
+    float3 cutoff = step(float3(0.04045), v);
+    float3 low = v / 12.92;
+    float3 high = pow((v + 0.055) / 1.055, float3(2.4));
+    return mix(low, high, cutoff);
+}
+
+float3 mg_linearToSrgb(float3 c) {
+    float3 v = max(c, float3(0.0));
+    float3 cutoff = step(float3(0.0031308), v);
+    float3 low = v * 12.92;
+    float3 high = 1.055 * pow(v, float3(1.0 / 2.4)) - 0.055;
+    return mix(low, high, cutoff);
+}
+
+float3 mg_linearToOklab(float3 c) {
+    float l = 0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b;
+    float m = 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b;
+    float s = 0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b;
+    float lc = pow(max(l, 0.0), 1.0 / 3.0);
+    float mc = pow(max(m, 0.0), 1.0 / 3.0);
+    float sc = pow(max(s, 0.0), 1.0 / 3.0);
+    return float3(
+        0.2104542553 * lc + 0.7936177850 * mc - 0.0040720468 * sc,
+        1.9779984951 * lc - 2.4285922050 * mc + 0.4505937099 * sc,
+        0.0259040371 * lc + 0.7827717662 * mc - 0.8086757660 * sc
+    );
+}
+
+float3 mg_oklabToLinear(float3 c) {
+    float lc = c.x + 0.3963377774 * c.y + 0.2158037573 * c.z;
+    float mc = c.x - 0.1055613458 * c.y - 0.0638541728 * c.z;
+    float sc = c.x - 0.0894841775 * c.y - 1.2914855480 * c.z;
+    float l = lc * lc * lc;
+    float m = mc * mc * mc;
+    float s = sc * sc * sc;
+    return float3(
+         4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+        -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+        -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+    );
+}
+
+float4 mg_mixStops(float4 a, float4 b, float t) {
+    float amount = t * t * (3.0 - 2.0 * t);
+    float3 labA = mg_linearToOklab(mg_srgbToLinear(a.rgb));
+    float3 labB = mg_linearToOklab(mg_srgbToLinear(b.rgb));
+    float3 blended = mg_linearToSrgb(mg_oklabToLinear(mix(labA, labB, amount)));
+    return float4(blended, mix(a.a, b.a, amount));
+}
+
+float4 mg_gradientAt(float t, float4 c0, float4 c1, float4 c2, float4 c3, float stopCount) {
+    int count = int(clamp(stopCount + 0.5, 1.0, 4.0));
+    if (count == 1) { return c0; }
+
+    float stops[4] = { c0.a, c1.a, c2.a, c3.a };
+    float4 cols[4] = { float4(c0.rgb, 1.0), float4(c1.rgb, 1.0), float4(c2.rgb, 1.0), float4(c3.rgb, 1.0) };
+
+    int lowIndex = 0;
+    for (int i = 0; i < 3; i++) {
+        if (i >= count - 1) { break; }
+        if (t >= stops[i]) { lowIndex = i; }
+    }
+    int highIndex = min(lowIndex + 1, count - 1);
+    float start = stops[lowIndex];
+    float end = stops[highIndex];
+    float amount = clamp((t - start) / max(end - start, 0.0001), 0.0, 1.0);
+    return mg_mixStops(cols[lowIndex], cols[highIndex], amount);
+}
+
+float mg_balanceRemap(float coordinate, float balance) {
+    float b = clamp(balance, -1.0, 1.0);
+    float exponent = pow(4.0, b);
+    return pow(clamp(coordinate, 0.0, 1.0), 1.0 / exponent);
+}
+
+float3 mg_rotateAroundAxis(float3 p, float3 axis, float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return p * c + cross(axis, p) * s + axis * dot(axis, p) * (1.0 - c);
+}
+
+float3 mg_rotateX(float3 p, float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return float3(p.x, c * p.y - s * p.z, s * p.y + c * p.z);
+}
+
+float3 mg_animatedOrientation(float3 p, float rotationTime) {
+    float3 axisA = normalize(float3(0.36, 0.81, 0.46));
+    float3 axisB = normalize(float3(-0.71, 0.29, 0.64));
+    float3 axisC = normalize(float3(0.58, -0.69, 0.43));
+    float3 oriented = mg_rotateAroundAxis(p, axisA, mg_wrapPhase(rotationTime * 0.287));
+    oriented = mg_rotateAroundAxis(oriented, axisB, mg_wrapPhase(rotationTime * 0.2236068));
+    oriented = mg_rotateAroundAxis(oriented, axisC, mg_wrapPhase(rotationTime * 0.1732051));
+    return mg_rotateX(oriented, -0.24);
+}
+
+float mg_coverSphereScale(float aspect) {
+    float safeRadius = 0.72;
+    float cameraDistance = 3.0;
+    float targetZoom = 4.0;
+    float baseFocalLength = 1.73;
+    float diagonal = sqrt(1.0 + aspect * aspect);
+    float targetFocalLength = baseFocalLength * targetZoom;
+    float requiredRadius = cameraDistance * diagonal /
+        sqrt(targetFocalLength * targetFocalLength + diagonal * diagonal);
+    return max(0.82, requiredRadius / safeRadius);
+}
+
+float mg_mappedZoom(float zoomPercent, float aspect) {
+    float maximumZoom = 10.0;
+    float diagonal = sqrt(1.0 + aspect * aspect);
+    float safeRadius = 0.72;
+    float cameraDistance = 3.0;
+    float baseFocalLength = 1.73;
+    float targetCoverZoom = 4.0;
+    float targetFocalLength = baseFocalLength * targetCoverZoom;
+    float requiredRadius = cameraDistance * diagonal /
+        sqrt(targetFocalLength * targetFocalLength + diagonal * diagonal);
+    float sphereScale = max(0.82, requiredRadius / safeRadius);
+    float conservativeRadius = min(cameraDistance - 0.001, sphereScale * safeRadius);
+    float perspectiveDepth = sqrt(max(
+        0.0001,
+        cameraDistance * cameraDistance - conservativeRadius * conservativeRadius
+    ));
+    float unclampedMinimumCoverZoom = (
+        diagonal * perspectiveDepth / (baseFocalLength * conservativeRadius)
+    ) * 1.12;
+    float minimumCoverZoom = min(maximumZoom, max(0.5, unclampedMinimumCoverZoom));
+    float minimumZoom = min(maximumZoom, max(0.5, minimumCoverZoom * 0.65));
+    float zoomProgress = clamp(zoomPercent, 0.0, 100.0) / 100.0;
+    float unclampedZoom = minimumZoom * pow(maximumZoom / minimumZoom, zoomProgress);
+    return min(maximumZoom, max(minimumZoom, unclampedZoom));
+}
+
+[[ stitchable ]]
+half4 movingGradient(
+    float2 position,
+    half4 color,
+    float2 size,
+    float time,
+    float4 shape,
+    float4 motion,
+    float4 mode,
+    float4 c0,
+    float4 c1,
+    float4 c2,
+    float4 c3
+) {
+    float2 safeSize = max(size, float2(1.0));
+    float aspect = safeSize.x / safeSize.y;
+    float2 uv = position / safeSize;
+
+    float detail = shape.x;
+    float intensity = shape.y;
+    float warp = shape.z;
+    float twist = shape.w;
+
+    float morphSpeed = motion.x;
+    float rotationSpeedPercent = motion.y;
+    float rotationSpeed = min(0.25, max(0.0, (rotationSpeedPercent / 100.0) * 0.25));
+    float zoomPercent = motion.z;
+    float balance = motion.w;
+
+    float material = mode.x;
+    float gradientMethodF = mode.y;
+    float stopCount = mode.z;
+    float shading = material < 0.5 ? 0.0 : 0.5;
+
+    float zoom = mg_mappedZoom(zoomPercent, aspect);
+    float rotationTime = time * max(rotationSpeed, 0.0);
+    float morphTime = time * max(morphSpeed, 0.0);
+    int gradientMethod = int(clamp(gradientMethodF + 0.5, 0.0, 2.0));
+    int materialId = int(material + 0.5);
+
+    float2 centered = float2((uv.x - 0.5) * aspect, 0.5 - uv.y);
+    float2 axis2 = float2(0.62 * aspect, 0.78);
+    axis2 = axis2 / max(length(axis2), 0.0001);
+    float extent = abs(axis2.x) * aspect * 0.5 + abs(axis2.y) * 0.5;
+    float rawBackdrop = dot(centered, axis2) / max(extent * 2.0, 0.0001) + 0.5;
+    float4 backdrop = mg_gradientAt(
+        mg_balanceRemap(rawBackdrop, balance),
+        c0, c1, c2, c3, stopCount
+    );
+
+    float focalLength = 1.73 * zoom;
+    float3 ro = float3(0.0, 0.0, 3.0);
+    float3 rd = normalize(float3(
+        centered.x * 2.0 / focalLength,
+        centered.y * 2.0 / focalLength,
+        -1.0
+    ));
+
+    float radius = mg_coverSphereScale(aspect) * 0.92;
+    float3 oc = ro;
+    float b = dot(oc, rd);
+    float c = dot(oc, oc) - radius * radius;
+    float h = b * b - c;
+    if (h < 0.0) {
+        return half4(half3(backdrop.rgb), 1.0);
+    }
+    float tHit = -b - sqrt(h);
+    if (tHit < 0.0) {
+        tHit = -b + sqrt(h);
+    }
+    if (tHit < 0.0) {
+        return half4(half3(backdrop.rgb), 1.0);
+    }
+
+    float3 hit = ro + rd * tHit;
+    float3 baseDirection = normalize(hit);
+    float3 direction = mg_animatedOrientation(baseDirection, rotationTime);
+
+    // Light twist on the sample direction — the original applies twist
+    // to the displaced surface; this keeps the graphic's swirl without
+    // a tessellated mesh.
+    if (twist > 0.0001) {
+        float3 axis = normalize(float3(-0.68, 0.54, 0.49));
+        float axial = clamp(dot(direction, axis), -1.0, 1.0);
+        float smoothAxial = axial * (1.5 - 0.5 * axial * axial);
+        direction = mg_rotateAroundAxis(
+            direction,
+            axis,
+            smoothAxial * clamp(twist, 0.0, 7.0) * 0.35
+        );
+    }
+
+    float field = 0.0;
+    if (gradientMethod == 0 || materialId == 4) {
+        field = mg_heightField(direction, detail, time, morphSpeed, warp);
+        field *= (0.72 + 0.28 * clamp(intensity / 5.0, 0.0, 1.0));
+    }
+
+    float gradientCoordinate = 0.0;
+    float3 normal = normalize(hit);
+    float3 viewDirection = normalize(-rd);
+    float facing = max(dot(normal, viewDirection), 0.0);
+
+    if (gradientMethod == 2) {
+        gradientCoordinate = 1.0 - facing;
+    } else {
+        gradientCoordinate = mg_objectGradientCoordinate(
+            gradientMethod,
+            direction,
+            field,
+            morphTime
+        );
+    }
+
+    float t = mg_balanceRemap(gradientCoordinate, balance);
+    float4 baseColor = mg_gradientAt(t, c0, c1, c2, c3, stopCount);
+
+    if (materialId == 0) {
+        return half4(half3(baseColor.rgb), 1.0);
+    }
+
+    float3 worldNormal = normalize(mg_animatedOrientation(normal, rotationTime));
+    facing = max(dot(worldNormal, viewDirection), 0.0);
+    float3 keyDirection = normalize(float3(-0.45, 0.7, 0.65));
+    float3 fillDirection = normalize(float3(0.5, -0.3, 0.4));
+    float3 halfDirection = normalize(keyDirection + viewDirection);
+    float key = max(dot(worldNormal, keyDirection), 0.0);
+    float fill = max(dot(worldNormal, fillDirection), 0.0) * 0.22;
+    float highlight = max(dot(worldNormal, halfDirection), 0.0);
+
+    if (materialId == 4) {
+        float fresnel = pow(1.0 - facing, 3.0);
+        float dispersion = 0.025 + fresnel * 0.075;
+        float4 redSample = mg_gradientAt(clamp(t + dispersion, 0.0, 1.0), c0, c1, c2, c3, stopCount);
+        float4 greenSample = mg_gradientAt(t, c0, c1, c2, c3, stopCount);
+        float4 blueSample = mg_gradientAt(clamp(t - dispersion, 0.0, 1.0), c0, c1, c2, c3, stopCount);
+        float3 refractedColor = float3(redSample.r, greenSample.g, blueSample.b);
+        float filmPhase = (1.0 - facing) * 18.0 + field * 7.0 + morphTime * 0.18;
+        float3 filmColor = 0.5 + 0.5 * cos(float3(filmPhase, filmPhase + 2.094, filmPhase + 4.188));
+        float3 reflectionDirection = reflect(-viewDirection, worldNormal);
+        float skyAmount = clamp(reflectionDirection.y * 0.5 + 0.5, 0.0, 1.0);
+        float3 environmentColor = mix(float3(0.08, 0.04, 0.16), float3(0.42, 0.72, 1.0), skyAmount);
+        float glassHighlight = pow(highlight, 120.0);
+        float3 transmission = refractedColor * (0.28 + facing * 0.48);
+        float3 iridescence = filmColor * (0.13 + fresnel * 0.38);
+        float3 reflection = environmentColor * (0.12 + fresnel * 0.7);
+        float3 glassColor = transmission + iridescence + reflection + float3(glassHighlight * 0.95);
+        float3 shaded = mix(baseColor.rgb, glassColor, shading);
+        return half4(half3(shaded), 1.0);
+    }
+
+    float ambientAmount = 0.42;
+    float diffuseAmount = 0.58;
+    float specularAmount = 0.05;
+    float specularPower = 8.0;
+    float rimAmount = 0.04;
+    float rimPower = 3.0;
+    float metallic = 0.0;
+    if (materialId == 1) {
+        ambientAmount = 0.40; diffuseAmount = 0.60; specularAmount = 0.14;
+        specularPower = 22.0; rimAmount = 0.07; rimPower = 2.8;
+    } else if (materialId == 2) {
+        ambientAmount = 0.34; diffuseAmount = 0.60; specularAmount = 0.42;
+        specularPower = 72.0; rimAmount = 0.12; rimPower = 2.2;
+    } else if (materialId == 3) {
+        ambientAmount = 0.26; diffuseAmount = 0.46; specularAmount = 0.66;
+        specularPower = 54.0; rimAmount = 0.18; rimPower = 1.8; metallic = 0.85;
+    }
+
+    float specular = pow(highlight, specularPower) * specularAmount;
+    float rim = pow(1.0 - facing, rimPower) * rimAmount;
+    float3 diffuseColor = baseColor.rgb * (ambientAmount + (key + fill) * diffuseAmount);
+    float3 dielectricReflection = float3(specular + rim);
+    float3 metalReflection = baseColor.rgb * (specular + rim * 1.25);
+    float3 reflection = mix(dielectricReflection, metalReflection, metallic);
+    float3 litColor = diffuseColor + reflection;
+    float3 finalColor = mix(baseColor.rgb, litColor, shading);
+    return half4(half3(finalColor), 1.0);
+}
